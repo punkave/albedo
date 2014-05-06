@@ -1,7 +1,6 @@
 {
   "info": "example report order",
   "report_name": "example",
-  "main": "report-maker.js",
   "host": "localhost",
   "user": "user",
   "password": "password",

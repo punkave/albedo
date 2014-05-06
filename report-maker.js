@@ -3,35 +3,35 @@ var mysql      = require('mysql');
 var commands = require('commander');
 var fs = require('fs');
 
-var orders;
+var config;
 
 commands
   .version('0.0.0')
-  .option('-o, --orders [filename]', 'Process report orders from config file [filename]')
+  .option('-o, --config [filename]', 'Process report from config file [filename]')
   .parse(process.argv);
 
-if(!commands.orders){
-	console.log('Report Maker requires orders to process reports, see --help.');
+if(!commands.config){
+	console.log('Report Maker requires a config to process a report, see --help.');
 
 }
 else{
 
-	orders = require('./' + commands.orders);
-	processOrders(orders);
+	config = require('./' + commands.config);
+	processReport(config);
 }
 
-function processOrders(orders){
+function processReport(config){
 
 	var connection = mysql.createConnection({
-  		host     : orders.host,
-  		user     : orders.user,
-  		password : orders.password,
-  		database : orders.database
+  		host     : config.host,
+  		user     : config.user,
+  		password : config.password,
+  		database : config.database
 	});
 
 	connection.connect();
 
-	connection.query(orders.query, function(err, rows, fields) {
+	connection.query(config.query, function(err, rows, fields) {
 
 		if (err) {
         	console.log(err);
@@ -47,7 +47,7 @@ function processOrders(orders){
     			}
     			else {
 
-					fs.writeFile(orders.report_dir + "/" + orders.report_name + "_" + Date.now(), csv, function(err) {
+					fs.writeFile(config.report_dir + "/" + config.report_name + "_" + Date.now(), csv, function(err) {
     					if(err) {
         					console.log(err);
     					} else {
