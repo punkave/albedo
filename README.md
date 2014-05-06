@@ -7,7 +7,7 @@ node.js app for generating cvs reports from mysql databases
 
 Run report-marker.js with the flag "--config"
 
-where config = your config file for a given report
+where "--config" = your config file for a given report
 
 ### Configuration
 
