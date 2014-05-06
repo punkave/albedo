@@ -1,0 +1,11 @@
+{
+  "info": "example report order",
+  "report_name": "example",
+  "main": "report-maker.js",
+  "host": "localhost",
+  "user": "user",
+  "password": "password",
+  "database": "example",
+  "query": "SELECT * FROM example",
+  "report_dir": "reports"
+}
