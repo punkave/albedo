@@ -42,7 +42,7 @@ module.exports = {
                 if (err) {
                     callback(err);
                 } else {
-
+                  //remove old reports if there are ones
                   if(options.removeOlderThan) {
                     rmDir = function(dirPath) {
                       try { var files = fs.readdirSync(dirPath); }
@@ -76,6 +76,7 @@ module.exports = {
  
                 rmDir(options.location);
               }
+              //make the new report
               var fileName =  options.name + "_" + moment().format("YYYY-MM-DD_HH-mm-ss");
               fs.writeFile(options.location + "/" + fileName, csv, function (err) {
                 if (err) {
