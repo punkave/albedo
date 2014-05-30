@@ -13,7 +13,6 @@ var options = {
     password: "root",
     database: "cmmi"
   },
-  conflict: "overwrite",
   removeOlderThan: "5 days"
 };
 

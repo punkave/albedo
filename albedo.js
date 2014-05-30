@@ -1,6 +1,7 @@
 var json2csv = require('json2csv');
 var mysql = require('mysql');
 var fs = require('fs');
+var moment = require('moment');
 
 module.exports = {
    /**
@@ -11,7 +12,6 @@ module.exports = {
    */
   processReport: function(options, callback) {
     
-
     var err;
 
     if(options) {
@@ -37,32 +37,64 @@ module.exports = {
             json2csv({
                 data: rows,
                 fields: fields
-            }, function (err, csv) {
+              }, function (err, csv) {
 
                 if (err) {
                     callback(err);
                 } else {
 
-                    var fileName =  options.name + "_";
-                    fs.writeFile(options.location + "/" + fileName, csv, {'flags': 'wx'}, function (err) {
-                        if (err) {
-                            callback(err);
-                        } else {
-
-                           var reportInfo = {
-                              name: fileName + '.csv',
-                              path: options.location + '/'
-                            }; 
-
-                            callback(null, reportInfo);
+                  if(options.removeOlderThan) {
+                    rmDir = function(dirPath) {
+                      try { var files = fs.readdirSync(dirPath); }
+                      catch(e) { callback(e); }
+                    
+                      if (files.length > 0) {
+                        for (var i = 0; i < files.length; i++) {
+                          var filePath = dirPath + '/' + files[i];
+                          var fileName = files[i];
+                          if (fs.statSync(filePath).isFile()) {
+                            var now = moment().unix();
+                            var daysAgo = now - (parseInt(options.removeOlderThan) * 86400);
+                            var fileTime = moment(fs.statSync(filePath).mtime).unix();
+                            if(fileName.substring(0, options.name.length) == options.name) {
+                              if (fileTime  < daysAgo)
+                              {
+                                fs.unlinkSync(filePath);
+                                console.log("deleted: " + filePath);
+                              }
+                              else{
+                                console.log("kept: " + filePath);
+                              }
+                            }
+                          }
+                        else {
+                          rmDir(filePath);
                         }
-                    });
-                }
-            });
-          }
-        });
+                      }
+                    }
+                  };
+ 
+                rmDir(options.location);
+              }
+              var fileName =  options.name + "_" + moment().format("YYYY-MM-DD_HH-mm-ss");
+              fs.writeFile(options.location + "/" + fileName, csv, function (err) {
+                if (err) {
+                  callback(err);
+                } else {
+                  var reportInfo = {
+                    name: fileName + '.csv',
+                    path: options.location + '/'
+                  }; 
 
-        connection.end();
+                  callback(null, reportInfo);
+                }
+              });
+            }
+          });
+        }
+      });
+
+      connection.end();
 
       }
 

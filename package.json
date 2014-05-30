@@ -1,29 +1,33 @@
 {
-  "name": "report-maker",
-  "version": "0.0.0",
-  "description": "node.js app for generating cvs reports from mysql databases",
-  "main": "report-maker.js",
-  "homepage": "https://github.com/joshuatrii/report-maker",
+  "name": "albedo",
+  "version": "0.1.0",
+  "description": "node.js module for creating CSV reports from database queries",
+  "main": "albedo.js",
+  "homepage": "https://github.com/punkave/albedo",
   "scripts": {
     "test": "test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/joshuatrii/report-maker.git"
+    "url": "https://github.com/punkave/albedo.git"
   },
   "keywords": [
     "report",
     "mysql",
     "data"
   ],
-  "author": "Jan Mlcoch",
+  "author": "P'unk Ave",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/joshuatrii/report-maker/issues"
+    "url": "https://github.com/punkave/albedo/issues"
   },
   "dependencies": {
     "mysql": "~2.2.0",
-    "commander": "~2.2.0",
-    "json2csv": "~2.2.1"
+    "json2csv": "~2.2.1",
+    "moment": "~2.6.0"
+  },
+  "devDependencies": {
+    "mocha": "~1.20.0",
+    "chai": "~1.9.1"
   }
 }

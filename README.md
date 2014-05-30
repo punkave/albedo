@@ -1,22 +1,43 @@
-report-maker
+albedo
 ============
 
-node.js app for generating cvs reports from mysql databases
+node.js module for generating cvs reports from mysql databases
 
 ### How to use
 
-Run report-marker.js with the flag "--config"
+call
 
-where "--config" = your config file for a given report
+`albedo.processReport({options},callback(err, report){});`
 
-### Configuration
+The options object takes the following parameters:
+```javascript
+{
+  location: "/path/to/folder/for/report",
+  name: "report_name",
+  query: "SELECT * FROM ALBEDO",
+  connection: {
+    type: "mysql",
+    host: "localhost",
+    user: "root",
+    password: "password",
+    database: "bigdata"
+  },
+  removeOlderThan: "5"
+}
+```
 
-* `info`: information about this config.
-* `report_name`: The name of the report, this will be used as the prefix for the report filename.
-* `host`: Hostname of the MySQL server.
-* `user`: username for the DB.
-* `password`: password for the DB.
-* `database`: DB name.
-* `query`: The query you want to run for the report.
-* `report_dir`: Location you want the report saved.
+All options are required except for `removeOlderThan`.
+
+`removeOlderThan` will allow Albedo to remove any reports matching the same name that are older than the specified number of days. By default, it will not remove any reports if this value isn't specified.
+
+The callback will return a report object if successful, which contains the following information:
+
+```javascript
+{
+  name: "report_name_YYYY-MM-DD_MM:SS.csv",
+  path: "/path/to/folder/for/report"
+}
+```
+
+Otherwise it will return an error string
 
