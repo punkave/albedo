@@ -34,7 +34,7 @@ The callback will return a report object if successful, which contains the follo
 
 ```javascript
 {
-  name: "report_name_YYYY-MM-DD_MM:SS.csv",
+  name: "report_name_YYYY-MM-DD_HH-mm-ss.csv",
   path: "/path/to/folder/for/report"
 }
 ```
