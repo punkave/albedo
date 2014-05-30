@@ -1,13 +1,13 @@
 albedo
 ============
 
-node.js module for generating cvs reports from mysql databases
+node.js module for generating cvs reports from databases
 
-### How to use
+### How to use:
 
-call
+call:
 
-`albedo.processReport({options},callback(err, report){});`
+`albedo.processReport({options}, callback(err, report) {} );`
 
 The options object takes the following parameters:
 ```javascript
@@ -28,7 +28,7 @@ The options object takes the following parameters:
 
 All options are required except for `removeOlderThan`.
 
-`removeOlderThan` will allow Albedo to remove any reports matching the same name that are older than the specified number of days. By default, it will not remove any reports if this value isn't specified.
+`removeOlderThan` will allow Albedo to remove any reports matching the same name that are older than the specified number of days. By default, it will not remove any reports if this value is not specified.
 
 The callback will return a report object if successful, which contains the following information:
 
@@ -39,5 +39,5 @@ The callback will return a report object if successful, which contains the follo
 }
 ```
 
-Otherwise it will return an error string
+Otherwise it will return an error string.
 

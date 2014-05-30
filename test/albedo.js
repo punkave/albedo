@@ -3,20 +3,18 @@ var should = require('chai').should(),
     processReport = albedo.processReport;
 
 var options = {
-  location: "reports",
-  name: "cmmi",
-  query: "SELECT * FROM incident LEFT JOIN sf_guard_user ON incident.user_id = sf_guard_user.id LIMIT 5;",
-  connection: {
+    location: "reports",
+    name: "report",
+    query: "SELECT * FROM albedo",
+    connection: {
     type: "db",
     host: "localhost",
-    user: "root",
-    password: "root",
-    database: "cmmi"
+    user: "user",
+    password: "password",
+    database: "db"
   },
   removeOlderThan: "5 days"
 };
-
-
 
 describe('processReport', function() {
     it('call process report without options', function() {
@@ -31,9 +29,6 @@ describe('processReport', function() {
             err.should.equal('The selected database type is not yet supported');
         });
     });
-
-    
-
     it('call process report', function() {
         options.connection.type = 'mysql';
         processReport(options, function (err, doc) {
