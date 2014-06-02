@@ -11,7 +11,7 @@ module.exports = {
    * @param  {function} callback
    */
   processReport: function(options, callback) {
-    
+
     var err;
 
     if(options) {
@@ -30,7 +30,7 @@ module.exports = {
         if (err) {
 
             callback(err);
-        } else {
+        } else if (rows.length > 0) {
 
             var fields = Object.keys(rows[0]);
 
@@ -77,13 +77,13 @@ module.exports = {
                 rmDir(options.location);
               }
               //make the new report
-              var fileName =  options.name + "_" + moment().format("YYYY-MM-DD_HH-mm-ss");
+              var fileName =  options.name + "_" + moment().format("YYYY-MM-DD_HH-mm-ss") + '.csv';
               fs.writeFile(options.location + "/" + fileName, csv, function (err) {
                 if (err) {
                   callback(err);
                 } else {
                   var reportInfo = {
-                    name: fileName + '.csv',
+                    name: fileName,
                     path: options.location + '/'
                   }; 
 
@@ -92,6 +92,8 @@ module.exports = {
               });
             }
           });
+        } else {
+          callback('No records for query');
         }
       });
 
