@@ -22,7 +22,8 @@ module.exports = {
         host: options.connection.host,
         user: options.connection.user,
         password: options.connection.password,
-        database: options.connection.database
+        database: options.connection.database,
+        insecureAuth: true
         });
 
         connection.query(options.query, function (err, rows, fields) {
