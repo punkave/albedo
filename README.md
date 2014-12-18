@@ -30,7 +30,7 @@ All options are required except for `removeOlderThan`.
 
 `removeOlderThan` will allow Albedo to remove any reports matching the same name that are older than the specified number of days. By default, it will not remove any reports if this value is not specified.
 
-The callback will return a report object if successful, which contains the following information:
+The `report` object in the  callback will return a report object if successful, which contains the following information:
 
 ```javascript
 {
