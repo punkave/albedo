@@ -2,6 +2,7 @@ var json2csv = require('json2csv');
 var mysql = require('mysql');
 var fs = require('fs');
 var moment = require('moment');
+var _ = require('underscore');
 
 module.exports = {
    /**
@@ -35,6 +36,12 @@ module.exports = {
       }
       if (rows.length == 0) {
         return callback('No records for query');
+      }
+
+      if (options.map_funcs) {
+        _.each(options.map_funcs, function(func) {
+          rows = _.map(rows, func);
+        });
       }
       var fields = Object.keys(rows[0]);
 

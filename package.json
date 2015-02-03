@@ -22,9 +22,10 @@
     "url": "https://github.com/punkave/albedo/issues"
   },
   "dependencies": {
-    "mysql": "~2.2.0",
     "json2csv": "~2.2.1",
-    "moment": "~2.6.0"
+    "moment": "~2.6.0",
+    "mysql": "~2.2.0",
+    "underscore": "^1.7.0"
   },
   "devDependencies": {
     "mocha": "~1.20.0",
