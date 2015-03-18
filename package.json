@@ -1,6 +1,6 @@
 {
   "name": "albedo",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "node.js module for creating CSV reports from database queries",
   "main": "albedo.js",
   "homepage": "https://github.com/punkave/albedo",
