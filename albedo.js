@@ -38,14 +38,19 @@ module.exports = {
         return callback('No records for query');
       }
 
-      if (options.map_funcs) {
-        _.each(options.map_funcs, function(func) {
+      // Allow calling code to pass either a function or an array of functions
+      // with which to process each row of data
+      if (_.isArray(options.process_row)) {
+        _.each(options.process_row, function(func) {
           rows = _.map(rows, func);
         });
+      } else if (_.isFunction(options.process_row)) {
+        rows = _.map(rows, options.process_row);
       }
+
       var fields = Object.keys(rows[0]);
 
-      json2csv(
+      return json2csv(
         {
           data: rows,
           fields: fields
