@@ -50,7 +50,8 @@ module.exports = {
 
       return json2csv(
         {
-          data: rows
+          data: rows,
+          preserveNewLinesInValues: true
         },
         function (err, csv) {
           if (err) {
