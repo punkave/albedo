@@ -48,12 +48,9 @@ module.exports = {
         rows = _.map(rows, options.process_row);
       }
 
-      var fields = Object.keys(rows[0]);
-
       return json2csv(
         {
-          data: rows,
-          fields: fields
+          data: rows
         },
         function (err, csv) {
           if (err) {
