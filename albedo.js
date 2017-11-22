@@ -58,7 +58,7 @@ module.exports = {
             return callback(err);
           }
 
-          if(options.removeOlderThan) {
+          if(options.hasOwnProperty('removeOlderThan')) {
             rmDir(options.location, options);
           }
           //make the new report
