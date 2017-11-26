@@ -22,13 +22,13 @@
     "url": "https://github.com/punkave/albedo/issues"
   },
   "dependencies": {
-    "json2csv": "~3.11.0",
-    "moment": "~2.6.0",
-    "mysql": "~2.2.0",
+    "json2csv": "^3.11.5",
+    "moment": "^2.19.2",
+    "mysql": "^2.15.0",
     "underscore": "^1.7.0"
   },
   "devDependencies": {
-    "mocha": "*",
-    "chai": "*"
+    "chai": "^4.1.2",
+    "mocha": "^4.0.1"
   }
 }
