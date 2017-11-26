@@ -16,7 +16,7 @@ module.exports = {
       return callback('processReport requires options, see documentation');
     }
 
-    if (options.connection.type != 'mysql') {
+    if (options.connection.type !== 'mysql') {
       return callback('The selected database type is not yet supported');
     }
 
@@ -28,32 +28,33 @@ module.exports = {
       insecureAuth: true,
     });
 
-    connection.query(options.query, (err, rows, fields) => {
+    connection.query(options.query, (err, rows) => {
       if (err) {
         return callback(err);
       }
-      if (rows.length == 0) {
+      if (rows.length === 0) {
         return callback('No records for query');
       }
 
+      let processedRows = rows;
       // Allow calling code to pass either a function or an array of functions
       // with which to process each row of data
       if (_.isArray(options.process_row)) {
         _.each(options.process_row, (func) => {
-          rows = _.map(rows, func);
+          processedRows = _.map(processedRows, func);
         });
       } else if (_.isFunction(options.process_row)) {
-        rows = _.map(rows, options.process_row);
+        processedRows = _.map(processedRows, options.process_row);
       }
 
       return json2csv(
         {
-          data: rows,
+          data: processedRows,
           preserveNewLinesInValues: true,
         },
-        (err, csv) => {
-          if (err) {
-            return callback(err);
+        (err1, csv) => {
+          if (err1) {
+            return callback(err1);
           }
 
           if (options.hasOwnProperty('removeOlderThan')) {
@@ -61,16 +62,16 @@ module.exports = {
           }
           // make the new report
           const fileName = `${options.name}_${moment().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
-          fs.writeFile(`${options.location}/${fileName}`, csv, (err) => {
-            if (err) {
-              return callback(err);
+          fs.writeFile(`${options.location}/${fileName}`, csv, (err2) => {
+            if (err2) {
+              return callback(err2);
             }
             const reportInfo = {
               name: fileName,
               path: `${options.location}/`,
             };
 
-            callback(null, reportInfo);
+            return callback(null, reportInfo);
           });
         },
       );
@@ -82,27 +83,30 @@ module.exports = {
 
 function rmDir(dirPath, options) {
   // TODO: rejigger this whole thing to operate async
-  try { var files = fs.readdirSync(dirPath); } catch (e) { callback(e); }
-
-  if (files.length > 0) {
-    for (let i = 0; i < files.length; i++) {
-      const filePath = `${dirPath}/${files[i]}`;
-      const fileName = files[i];
-      if (fs.statSync(filePath).isFile()) {
-        const now = moment().unix();
-        const daysAgo = now - (parseInt(options.removeOlderThan) * 86400);
-        const fileTime = moment(fs.statSync(filePath).mtime).unix();
-        if (fileName.substring(0, options.name.length) == options.name) {
-          if (fileTime < daysAgo) {
-            fs.unlinkSync(filePath);
-            console.log(`deleted: ${filePath}`);
-          } else {
-            console.log(`kept: ${filePath}`);
-          }
-        }
-      } else {
-        rmDir(filePath, options);
-      }
-    }
+  let files;
+  try {
+    files = fs.readdirSync(dirPath);
+  } catch (e) {
+    console.err('Could not delete files');
+    return;
   }
+
+  files.forEach((fileName) => {
+    const filePath = `${dirPath}/${fileName}`;
+    if (fs.statSync(filePath).isFile()) {
+      const now = moment().unix();
+      const daysAgo = now - (parseInt(options.removeOlderThan, 10) * 86400);
+      const fileTime = moment(fs.statSync(filePath).mtime).unix();
+      if (fileName.substring(0, options.name.length) === options.name) {
+        if (fileTime < daysAgo) {
+          fs.unlinkSync(filePath);
+          console.log(`deleted: ${filePath}`);
+        } else {
+          console.log(`kept: ${filePath}`);
+        }
+      }
+    } else {
+      rmDir(filePath, options);
+    }
+  });
 }
