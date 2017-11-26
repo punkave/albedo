@@ -5,7 +5,8 @@
   "main": "albedo.js",
   "homepage": "https://github.com/punkave/albedo",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha"
+    "test": "./node_modules/mocha/bin/mocha",
+    "lint": "eslint *.js"
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,9 @@
   },
   "devDependencies": {
     "chai": "^4.1.2",
+    "eslint": "^4.11.0",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0",
     "mocha": "^4.0.1"
   }
 }
