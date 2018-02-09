@@ -73,7 +73,7 @@ module.exports = {
 
             return callback(null, reportInfo);
           });
-        },
+        }
       );
     });
 
