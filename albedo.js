@@ -97,7 +97,8 @@ function rmDir(dirPath, options) {
       const now = moment().unix();
       const daysAgo = now - (parseInt(options.removeOlderThan, 10) * 86400);
       const fileTime = moment(fs.statSync(filePath).mtime).unix();
-      if (fileName.substring(0, options.name.length) === options.name) {
+      // get the full name of the report from the file by removing the datetime and extension
+      if (fileName.slice(0, 0-'_YYYY-MM-DD_HH-mm-ss.csv'.length) === options.name) {
         if (fileTime < daysAgo) {
           fs.unlinkSync(filePath);
           console.log(`deleted: ${filePath}`);
