@@ -1,16 +1,16 @@
 {
-  "name": "albedo",
+  "name": "@waytohealth/albedo",
   "version": "0.2.2",
   "description": "node.js module for creating CSV reports from database queries",
   "main": "albedo.js",
-  "homepage": "https://github.com/punkave/albedo",
+  "homepage": "https://github.com/waytohealth/albedo",
   "scripts": {
     "test": "./node_modules/mocha/bin/mocha",
     "lint": "eslint *.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/punkave/albedo.git"
+    "url": "https://github.com/waytohealth/albedo.git"
   },
   "keywords": [
     "report",
@@ -20,7 +20,7 @@
   "author": "P'unk Ave",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/punkave/albedo/issues"
+    "url": "https://github.com/waytohealth/albedo/issues"
   },
   "dependencies": {
     "json2csv": "^3.11.5",
