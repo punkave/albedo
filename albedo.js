@@ -43,6 +43,7 @@ module.exports = {
     const json2csv = new CSVTransform(null, { objectMode: true });
 
     // handle row transformations
+    let empty = true;
     const rowTransform = new Transform({
       writableObjectMode: true,
       readableObjectMode: true,
@@ -58,6 +59,7 @@ module.exports = {
             row = options.process_row(row);
           }
           handler(null, row);
+          empty = false;
         } catch (e) {
           handler(e);
         }
@@ -79,6 +81,16 @@ module.exports = {
     output.on('close', () => {
       if (wasError) {
         // suppress final report info callback on errors
+        return;
+      }
+      if (empty) {
+        // don't leave empty report files if there were no results
+        fs.unlink(outputPath, (e) => {
+          if (e) {
+            callback(`Failed to remove empty report file: ${e}`);
+          }
+        });
+        callback('No records for query');
         return;
       }
       const reportInfo = {
