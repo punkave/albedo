@@ -29,11 +29,6 @@ module.exports = {
       insecureAuth: true,
     });
 
-    // prune older reports
-    if (options.hasOwnProperty('removeOlderThan')) {
-      rmDir(options.location, options);
-    }
-
     // set up input, csv, and output streams
     const fileName = `${options.name}_${moment().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
     const outputPath = `${options.location}/${fileName}`;
@@ -93,6 +88,11 @@ module.exports = {
         callback('No records for query');
         return;
       }
+      // prune older reports only after successful export
+      if (options.hasOwnProperty('removeOlderThan')) {
+        rmDir(options.location, options, outputPath);
+      }
+      // finally return new report info
       const reportInfo = {
         name: fileName,
         path: `${options.location}/`,
@@ -106,7 +106,7 @@ module.exports = {
   },
 };
 
-function rmDir(dirPath, options) {
+function rmDir(dirPath, options, outputPath) {
   // TODO: rejigger this whole thing to operate async
   let files;
   try {
@@ -118,6 +118,10 @@ function rmDir(dirPath, options) {
 
   files.forEach((fileName) => {
     const filePath = `${dirPath}/${fileName}`;
+    if (filePath === outputPath) {
+      console.log(`ignoring: ${filePath}`);
+      return;
+    }
     if (fs.statSync(filePath).isFile()) {
       const now = moment().unix();
       const daysAgo = now - (parseInt(options.removeOlderThan, 10) * 86400);
@@ -132,7 +136,7 @@ function rmDir(dirPath, options) {
         }
       }
     } else {
-      rmDir(filePath, options);
+      rmDir(filePath, options, outputPath);
     }
   });
 }
