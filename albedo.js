@@ -1,4 +1,5 @@
-const json2csv = require('json2csv');
+const { Transform } = require('stream');
+const CSVTransform = require('json2csv').Transform;
 const mysql = require('mysql');
 const fs = require('fs');
 const moment = require('moment');
@@ -28,60 +29,84 @@ module.exports = {
       insecureAuth: true,
     });
 
-    connection.query(options.query, (err, rows) => {
-      if (err) {
-        return callback(err);
-      }
-      if (rows.length === 0) {
-        return callback('No records for query');
-      }
+    // set up input, csv, and output streams
+    const fileName = `${options.name}_${moment().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
+    const outputPath = `${options.location}/${fileName}`;
 
-      let processedRows = rows;
-      // Allow calling code to pass either a function or an array of functions
-      // with which to process each row of data
-      if (_.isArray(options.process_row)) {
-        _.each(options.process_row, (func) => {
-          processedRows = _.map(processedRows, func);
-        });
-      } else if (_.isFunction(options.process_row)) {
-        processedRows = _.map(processedRows, options.process_row);
-      }
+    const input = connection.query(options.query).stream({ highWaterMark: 64 });
+    const output = fs.createWriteStream(outputPath, { encoding: 'utf8' });
+    const json2csv = new CSVTransform(null, { objectMode: true });
 
-      return json2csv(
-        {
-          data: processedRows,
-          preserveNewLinesInValues: true,
-        },
-        (err1, csv) => {
-          if (err1) {
-            return callback(err1);
+    // handle row transformations
+    let empty = true;
+    const rowTransform = new Transform({
+      writableObjectMode: true,
+      readableObjectMode: true,
+
+      transform(chunk, enc, handler) {
+        try {
+          let row = chunk;
+          if (_.isArray(options.process_row)) {
+            _.each(options.process_row, (func) => {
+              row = func(row);
+            });
+          } else if (_.isFunction(options.process_row)) {
+            row = options.process_row(row);
           }
-
-          if (options.hasOwnProperty('removeOlderThan')) {
-            rmDir(options.location, options);
-          }
-          // make the new report
-          const fileName = `${options.name}_${moment().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
-          fs.writeFile(`${options.location}/${fileName}`, csv, (err2) => {
-            if (err2) {
-              return callback(err2);
-            }
-            const reportInfo = {
-              name: fileName,
-              path: `${options.location}/`,
-            };
-
-            return callback(null, reportInfo);
-          });
+          handler(null, row);
+          empty = false;
+        } catch (e) {
+          handler(e);
         }
-      );
+      },
     });
 
+    // route errors from streams to callback
+    let wasError = false;
+    function forwardError(e) {
+      wasError = true;
+      callback(e);
+    }
+    input.on('error', forwardError);
+    rowTransform.on('error', forwardError);
+    json2csv.on('error', forwardError);
+    output.on('error', forwardError);
+
+    // route output stream finish event to callback
+    output.on('close', () => {
+      if (wasError) {
+        // suppress final report info callback on errors
+        return;
+      }
+      if (empty) {
+        // don't leave empty report files if there were no results
+        fs.unlink(outputPath, (e) => {
+          if (e) {
+            callback(`Failed to remove empty report file: ${e}`);
+          }
+        });
+        callback('No records for query');
+        return;
+      }
+      // prune older reports only after successful export
+      if (options.hasOwnProperty('removeOlderThan')) {
+        rmDir(options.location, options, outputPath);
+      }
+      // finally return new report info
+      const reportInfo = {
+        name: fileName,
+        path: `${options.location}/`,
+      };
+      callback(null, reportInfo);
+    });
+
+    // stream query results through processing pipeline
+    input.pipe(rowTransform).pipe(json2csv).pipe(output);
     connection.end();
   },
 };
 
-function rmDir(dirPath, options) {
+function rmDir(dirPath, options, outputPath) {
   // TODO: rejigger this whole thing to operate async
   let files;
   try {
@@ -93,6 +118,10 @@ function rmDir(dirPath, options) {
 
   files.forEach((fileName) => {
     const filePath = `${dirPath}/${fileName}`;
+    if (filePath === outputPath) {
+      console.log(`ignoring: ${filePath}`);
+      return;
+    }
     if (fs.statSync(filePath).isFile()) {
       const now = moment().unix();
       const daysAgo = now - (parseInt(options.removeOlderThan, 10) * 86400);
@@ -107,7 +136,7 @@ function rmDir(dirPath, options) {
         }
       }
     } else {
-      rmDir(filePath, options);
+      rmDir(filePath, options, outputPath);
     }
   });
 }
