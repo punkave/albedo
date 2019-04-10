@@ -74,10 +74,6 @@ module.exports = {
 
     // route output stream finish event to callback
     output.on('close', () => {
-      if (wasError) {
-        // suppress final report info callback on errors
-        return;
-      }
       if (empty) {
         // don't leave empty report files if there were no results
         fs.unlink(outputPath, (e) => {
@@ -86,6 +82,10 @@ module.exports = {
           }
         });
         callback('No records for query');
+        return;
+      }
+      if (wasError) {
+        // suppress final report info callback on errors
         return;
       }
       // prune older reports only after successful export
