@@ -82,7 +82,7 @@ module.exports = {
           }
         });
 
-        if(!wasError){
+        if (!wasError) {
           callback('No records for query');
         }
         return;
