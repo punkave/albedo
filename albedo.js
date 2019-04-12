@@ -81,8 +81,10 @@ module.exports = {
             callback(`Failed to remove empty report file: ${e}`);
           }
         });
-       
-        callback('No records for query');
+
+        if(!wasError){
+          callback('No records for query');
+        }
         return;
       }
       if (wasError) {
