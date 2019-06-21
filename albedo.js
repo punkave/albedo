@@ -1,116 +1,145 @@
-var json2csv = require('json2csv');
-var mysql = require('mysql');
-var fs = require('fs');
-var moment = require('moment');
-var _ = require('underscore');
+const { Transform } = require('stream');
+const CSVTransform = require('json2csv').Transform;
+const mysql = require('mysql');
+const fs = require('fs');
+const moment = require('moment');
+const _ = require('underscore');
 
 module.exports = {
-   /**
+  /**
    * Processes a report for the given options
    *
    * @param  {obj} options
    * @param  {function} callback
    */
-  processReport: function(options, callback) {
-
+  processReport(options, callback) {
     if (!options) {
       return callback('processReport requires options, see documentation');
     }
 
-    if (options.connection.type != "mysql") {
+    if (options.connection.type !== 'mysql') {
       return callback('The selected database type is not yet supported');
     }
 
-    var connection = mysql.createConnection({
+    const connection = mysql.createConnection({
       host: options.connection.host,
       user: options.connection.user,
       password: options.connection.password,
       database: options.connection.database,
-      insecureAuth: true
+      insecureAuth: true,
     });
 
-    connection.query(options.query, function (err, rows, fields) {
+    // set up input, csv, and output streams
+    const fileName = `${options.name}_${moment().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
+    const outputPath = `${options.location}/${fileName}`;
 
-      if (err) {
-        return callback(err);
-      }
-      if (rows.length == 0) {
-        return callback('No records for query');
-      }
+    const input = connection.query(options.query).stream({ highWaterMark: 64 });
+    const output = fs.createWriteStream(outputPath, { encoding: 'utf8' });
+    const json2csv = new CSVTransform(null, { objectMode: true });
 
-      // Allow calling code to pass either a function or an array of functions
-      // with which to process each row of data
-      if (_.isArray(options.process_row)) {
-        _.each(options.process_row, function(func) {
-          rows = _.map(rows, func);
-        });
-      } else if (_.isFunction(options.process_row)) {
-        rows = _.map(rows, options.process_row);
-      }
+    // handle row transformations
+    let empty = true;
+    const rowTransform = new Transform({
+      writableObjectMode: true,
+      readableObjectMode: true,
 
-      var fields = Object.keys(rows[0]);
-
-      return json2csv(
-        {
-          data: rows,
-          fields: fields
-        },
-        function (err, csv) {
-          if (err) {
-            return callback(err);
+      transform(chunk, enc, handler) {
+        try {
+          let row = chunk;
+          if (_.isArray(options.process_row)) {
+            _.each(options.process_row, (func) => {
+              row = func(row);
+            });
+          } else if (_.isFunction(options.process_row)) {
+            row = options.process_row(row);
           }
-
-          if(options.removeOlderThan) {
-            rmDir(options.location, options);
-          }
-          //make the new report
-          var fileName =  options.name + "_" + moment().format("YYYY-MM-DD_HH-mm-ss") + '.csv';
-          fs.writeFile(options.location + "/" + fileName, csv, function (err) {
-            if (err) {
-              return callback(err);
-            }
-            var reportInfo = {
-              name: fileName,
-              path: options.location + '/'
-            };
-
-            callback(null, reportInfo);
-          });
-        });
+          handler(null, row);
+          empty = false;
+        } catch (e) {
+          handler(e);
+        }
+      },
     });
 
+    // route errors from streams to callback
+    let wasError = false;
+    function forwardError(e) {
+      wasError = true;
+      callback(e);
+    }
+    input.on('error', forwardError);
+    rowTransform.on('error', forwardError);
+    json2csv.on('error', forwardError);
+    output.on('error', forwardError);
+
+    // route output stream finish event to callback
+    output.on('close', () => {
+      if (empty) {
+        // don't leave empty report files if there were no results
+        fs.unlink(outputPath, (e) => {
+          if (e) {
+            callback(`Failed to remove empty report file: ${e}`);
+          }
+        });
+
+        if (!wasError) {
+          callback('No records for query');
+        }
+        return;
+      }
+      if (wasError) {
+        // suppress final report info callback on errors
+        return;
+      }
+      // prune older reports only after successful export
+      if (options.hasOwnProperty('removeOlderThan')) {
+        rmDir(options.location, options, outputPath);
+      }
+      // finally return new report info
+      const reportInfo = {
+        name: fileName,
+        path: `${options.location}/`,
+      };
+      callback(null, reportInfo);
+    });
+
+    // stream query results through processing pipeline
+    input.pipe(rowTransform).pipe(json2csv).pipe(output);
     connection.end();
-
-  }
+  },
 };
 
-function rmDir(dirPath, options) {
+function rmDir(dirPath, options, outputPath) {
   // TODO: rejigger this whole thing to operate async
-  try { var files = fs.readdirSync(dirPath); }
-  catch(e) { callback(e); }
+  let files;
+  try {
+    files = fs.readdirSync(dirPath);
+  } catch (e) {
+    console.err('Could not delete files');
+    return;
+  }
 
-  if (files.length > 0) {
-    for (var i = 0; i < files.length; i++) {
-      var filePath = dirPath + '/' + files[i];
-      var fileName = files[i];
-      if (fs.statSync(filePath).isFile()) {
-        var now = moment().unix();
-        var daysAgo = now - (parseInt(options.removeOlderThan) * 86400);
-        var fileTime = moment(fs.statSync(filePath).mtime).unix();
-        if(fileName.substring(0, options.name.length) == options.name) {
-          if (fileTime  < daysAgo)
-          {
-            fs.unlinkSync(filePath);
-            console.log("deleted: " + filePath);
-          }
-          else{
-            console.log("kept: " + filePath);
-          }
+  files.forEach((fileName) => {
+    const filePath = `${dirPath}/${fileName}`;
+    if (filePath === outputPath) {
+      console.log(`ignoring: ${filePath}`);
+      return;
+    }
+    if (fs.statSync(filePath).isFile()) {
+      const now = moment().unix();
+      const daysAgo = now - (parseInt(options.removeOlderThan, 10) * 86400);
+      const fileTime = moment(fs.statSync(filePath).mtime).unix();
+      // get the full name of the report from the file by removing the datetime and extension
+      if (fileName.slice(0, 0-'_YYYY-MM-DD_HH-mm-ss.csv'.length) === options.name) {
+        if (fileTime < daysAgo) {
+          fs.unlinkSync(filePath);
+          console.log(`deleted: ${filePath}`);
+        } else {
+          console.log(`kept: ${filePath}`);
         }
       }
-      else {
-        rmDir(filePath,options);
-      }
+    } else {
+      rmDir(filePath, options, outputPath);
     }
-  }
-};
+  });
+}
